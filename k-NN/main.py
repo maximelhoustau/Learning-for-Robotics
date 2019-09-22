@@ -2,6 +2,9 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import matplotlib.patches as mpatches
+from mpl_toolkits.mplot3d import Axes3D
 
 def euclidian_distance(index_training_point, index_testing_point, training_set, testing_set):
     dis = 0
@@ -43,33 +46,39 @@ def project(dataset_path, k):
     dataset = pd.read_csv(dataset_path, delimiter=',', na_values='?', header=None)
     dataset = np.array(dataset)
     np.random.shuffle(dataset)
-
+    
     ##Build the training set
     training_size = int(dataset.shape[0]*0.8)
-    training_set = np.delete(dataset, 0, axis=1)
+     
+    if(dataset_path == breast):
+        training_set = np.delete(dataset, 0, axis=1)
+        testing_set = np.delete(dataset, [0, dataset.shape[1]-1], axis=1)
+    else:
+        training_set = dataset
+        testing_set = np.delete(dataset, dataset.shape[1]-1, axis=1)
+    
     training_set = training_set[:training_size]
-
+    
     ##Build the testing set
     #Testing set without the class of patients
-    testing_set = np.delete(dataset, [0,dataset.shape[1]-1], axis=1)
     testing_set = testing_set[training_size+1:]
 
     #Vector of the class of patients from the testing set
     testing_set_class = np.delete(dataset, 0, axis=1)
     testing_set_class = testing_set_class[training_size+1:]
     testing_set_class = testing_set_class[:,dataset.shape[1]-2]
-    
+
     ##Parameters 
     #Number of rows of training set
     m = training_set.shape[0] 
     l = testing_set.shape[0] 
-   
+     
     if(dataset_path == breast):
-        print("Working on Breast Cancer Dataset")
+        print("\nWorking on Breast Cancer Dataset")
     elif(dataset_path == haberman): 
         testing_set_class = 2*testing_set_class
         training_set[:,training_set.shape[1]-1] = 2*training_set[:,training_set.shape[1]-1]
-        print("Working on Haberman Dataset")
+        print("\nWorking on Haberman Dataset")
         
     #Harmonisation of the test_set_class vector
     for i in range(l):
@@ -77,6 +86,7 @@ def project(dataset_path, k):
             testing_set_class[i] = 0
         else:
             testing_set_class[i] = 1
+
     #Harmonisation of training set class feature
     for i in range(m):
         if(training_set[i][training_set.shape[1]-1] == 2):
@@ -113,10 +123,76 @@ def project(dataset_path, k):
 
     error = compute_errors(Class_vector, testing_set_class)
     print("\nThe k-NN algorithm gave "+ str(error) + "% of accuracy with k="+ str(k) )
+
+    fig = plt.figure()
+    fig.suptitle(dataset_path + ", k =  " +str(k))
+
+    if(dataset_path == breast):
+        AxisNames = wisconsinAxisNames
+    else:
+        AxisNames = habermanAxisNames
+    
+    ax = fig.add_subplot(321, projection='3d')
+    ax.scatter(testing_set[:,0], testing_set[:,1], testing_set[:,2], c=getColors(testing_set_class))
+    ax.set_xlabel(AxisNames[0])
+    ax.set_ylabel(AxisNames[1])
+    ax.set_zlabel(AxisNames[2])
+    ax.set_title("Testing set initial")
+ 
+    ax = fig.add_subplot(322, projection='3d')
+    ax.scatter(testing_set[:,0], testing_set[:,1], testing_set[:,2], c=getColors(Class_vector))
+    ax.set_xlabel(AxisNames[0])
+    ax.set_ylabel(AxisNames[1])
+    ax.set_zlabel(AxisNames[2]) 
+    ax.set_title("Prediction by the k-nn algorithm")
+
+    if(dataset_path == breast):
+
+        ax = fig.add_subplot(323, projection='3d')
+        ax.scatter(testing_set[:,3], testing_set[:,4], testing_set[:,5], c=getColors(testing_set_class))
+        ax.set_xlabel(wisconsinAxisNames[3])
+        ax.set_ylabel(wisconsinAxisNames[4])
+        ax.set_zlabel(wisconsinAxisNames[5])
+     
+        ax = fig.add_subplot(324, projection='3d')
+        ax.scatter(testing_set[:,3], testing_set[:,4], testing_set[:,5], c=getColors(Class_vector))
+        ax.set_xlabel(wisconsinAxisNames[3])
+        ax.set_ylabel(wisconsinAxisNames[4])
+        ax.set_zlabel(wisconsinAxisNames[5])  
+   
+        ax = fig.add_subplot(325, projection='3d')
+        ax.scatter(testing_set[:,6], testing_set[:,7], testing_set[:,8], c=getColors(testing_set_class))
+        ax.set_xlabel(wisconsinAxisNames[6])
+        ax.set_ylabel(wisconsinAxisNames[7])
+        ax.set_zlabel(wisconsinAxisNames[8])
+     
+        ax = fig.add_subplot(326, projection='3d')
+        ax.scatter(testing_set[:,6], testing_set[:,7], testing_set[:,8], c=getColors(Class_vector))
+        ax.set_xlabel(wisconsinAxisNames[6])
+        ax.set_ylabel(wisconsinAxisNames[7])
+        ax.set_zlabel(wisconsinAxisNames[8])  
+   
+
+    plt.show()
+
     return(Class_vector)
+
+
+def getColors(class_vector):
+    c = []
+    for i in range(len(class_vector)):
+        if (class_vector[i] == 0 or class_vector[i] == 2):
+            c.append('b')
+        if(class_vector[i] == 1 or class_vector[i] == 4):
+            c.append('r')
+
+    return(c)
+
 
 breast = "datasets/breast-cancer-wisconsin.data"
 haberman = "datasets/haberman.data"
+habermanAxisNames = ["Age", "YearOperation", "AuxilliaryNodes", "Class"]
+wisconsinAxisNames = ["SampleNumber", "Clump Thickness", "Uniformity of Cell Size", "Uniformity of Cell Shape", "Marginal Adhesion","Single Epithelial Cell Size","Bare Nuclei","Bland Chromatin","Normal Nucleoli","Mitoses"]
 
 project(breast, 3)
 project(breast, 6)
