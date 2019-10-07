@@ -1,4 +1,5 @@
 *.data
+*.csv
 *.names
 Slides/
 .DS_STORE
